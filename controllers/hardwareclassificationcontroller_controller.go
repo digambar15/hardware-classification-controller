@@ -14,14 +14,17 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 
-	bmh "github.com/metal3-io/baremetal-operator/pkg/apis/metal3/v1alpha1"
 	hwcc "hardware-classification-controller/api/v1alpha1"
+	validation "hardware-classification-controller/validate"
+
+	bmh "github.com/metal3-io/baremetal-operator/pkg/apis/metal3/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,6 +62,24 @@ func (r *HardwareClassificationControllerReconciler) Reconcile(req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 	r.Log.Info("Fetched Baremetal host list successfully", "BareMetalHostList", bmhHostList)
+
+	// Pass the baremetal host list and extractedhardwareProfile to comparison function
+	validHostList := validation.Comparison(bmhHostList, extractedProfileList)
+
+	fmt.Println("Hostname and valid profile details:-")
+	fmt.Println("*********************************************")
+	for hostDetails, profile := range validHostList {
+
+		host, ok := hostDetails.(*bmh.HardwareDetails)
+		if ok {
+			fmt.Println("Host :- ", host.Hostname)
+		}
+
+		fmt.Println("Profiles")
+		fmt.Println("")
+		fmt.Printf("%+v \n\n", profile)
+		fmt.Println("*********************************************")
+	}
 
 	return ctrl.Result{}, nil
 }
